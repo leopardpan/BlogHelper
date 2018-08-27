@@ -17,5 +17,5 @@
 
 `$ python app.py BlogNote iOSAdvanced`
 
-BlogNote: 将要生成的博客文件夹
+BlogNote: 将要生成的博客文件夹          
 iOSAdvanced:  整理好的文章
