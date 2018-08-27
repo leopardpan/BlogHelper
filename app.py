@@ -21,7 +21,7 @@ def check_title(file_path):
     return False
 
 
-def add_title(title,file_path):
+def add_title(title,tag,file_path):
     # print file_path
     # print title
     result = check_title(file_path)
@@ -33,7 +33,12 @@ def add_title(title,file_path):
     content = file.read()
     file.close()
 
-    content = "---\n" +'title: '+title + '\n' + '---\n\n' + content
+    title = 'title: '+title + '\n'
+    if tag:
+        tag = 'tags: '+ '\"' + tag + '\"' + '\n'
+
+    content = "---\n" + title + tag + '---\n\n' + content
+
     file = open(file_path, "w")
     file.write(content)
     file.close()
@@ -43,14 +48,56 @@ def replace_article_title(file_dir):
     for root, dirs, files in os.walk(file_dir):
         for file in files:
             if '.md' in file:
-                add_title(file,root+'/'+file)
+                title = file.replace('.md','')
+                dirs = root.split('/')
+                tag = dirs[len(dirs)-1]
+                if tag == '_post':
+                    tag = None
+
+                add_title(title,tag,root+'/'+file)
 
 
 def openWeb():
     time.sleep(3)
-    url = 'http://127.0.0.1:4000/archives'
+    url = 'http://127.0.0.1:4000/tags'
     webbrowser.open(url)
     print webbrowser.get()
+
+def insert_string_file_path(origin_string,string,file_path):
+    file_name = file_path
+    temp_file_name = file_path+'_tmp'
+    fo = open(file_name, "r+")
+    new_fo = open(temp_file_name, "w")
+
+    lines = fo.readlines()
+    for line in lines:
+        if origin_string in line:
+            line = line + string +'\n'
+        new_fo.write(line)
+
+    fo.close()
+    new_fo.close()
+
+    os.remove(file_name)
+    os.rename(temp_file_name, file_name)
+
+def replace_string_file_path(old_string,new_string,file_path):
+    file_name = file_path
+    temp_file_name = file_path+'_tmp'
+    fo = open(file_name, "r+")
+    new_fo = open(temp_file_name, "w")
+
+    lines = fo.readlines()
+    for line in lines:
+        if old_string in line:
+            line = new_string+' \n'
+        new_fo.write(line)
+
+    fo.close()
+    new_fo.close()
+
+    os.remove(file_name)
+    os.rename(temp_file_name, file_name)
 
 
 def add_themes_next():
@@ -61,22 +108,13 @@ def add_themes_next():
         os.makedirs('themes/next')
         os.system('curl -s https://api.github.com/repos/iissnan/hexo-theme-next/releases/latest | grep tarball_url | cut -d \'\"\' -f 4 | wget -i - -O- | tar -zx -C themes/next --strip-components=1')
 
-    file_name = '_config.yml'
-    temp_file_name = 't_config.yml'
-    fo = open(file_name, "r+")
-    new_fo = open(temp_file_name, "w")
+    replace_string_file_path('theme:', 'theme: next', '_config.yml')
+    replace_string_file_path('#tags:', '  tags: /tags/ || tags', 'themes/next/_config.yml')
 
-    lines = fo.readlines()
-    for line in lines:
-        if 'theme:' in line:
-            line = 'theme: next \n'
-        new_fo.write(line)
+    if not os.path.isfile('source/tags/index.md'):
+        os.system('hexo new page tags')
 
-    fo.close()
-    new_fo.close()
-
-    os.remove(file_name)
-    os.rename(temp_file_name, file_name)
+    insert_string_file_path('date:', 'type: "tags"', 'source/tags/index.md')
 
 def creat_hexo(article_folder,blog_name):
 
